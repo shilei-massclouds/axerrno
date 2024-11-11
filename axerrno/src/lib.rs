@@ -85,6 +85,16 @@ pub enum AxError {
     /// An error returned when an operation could not be completed because a
     /// call to `write()` returned [`Ok(0)`](Ok).
     WriteZero,
+    /// Broken pipe.
+    BrokenPipe,
+    /// No such device or address
+    NoDevOrAddr,
+    /// Operation not permitted
+    NoPermission,
+    /// Permission denied
+    PermDenied,
+    /// Too many symbolic links encountered
+    TooManyLinks,
 }
 
 /// A specialized [`Result`] type with [`AxError`] as the error type.
@@ -224,6 +234,11 @@ impl AxError {
             Unsupported => "Operation not supported",
             WouldBlock => "Operation would block",
             WriteZero => "Write zero",
+            BrokenPipe => "Broken pipe",
+            NoDevOrAddr => "No such device or address",
+            NoPermission => "Operation not permitted",
+            PermDenied => "Permission denied",
+            TooManyLinks => "Too many symbolic links encountered",
         }
     }
 
@@ -252,6 +267,16 @@ impl fmt::Display for AxError {
     }
 }
 
+impl From<LinuxError> for AxError {
+    fn from(e: LinuxError) -> Self {
+        use AxError::*;
+        match e {
+            LinuxError::ENOENT => NotFound,
+            _ => todo!("{:?}", e),
+        }
+    }
+}
+
 impl From<AxError> for LinuxError {
     fn from(e: AxError) -> Self {
         use AxError::*;
@@ -269,12 +294,17 @@ impl From<AxError> for LinuxError {
             NotADirectory => LinuxError::ENOTDIR,
             NotConnected => LinuxError::ENOTCONN,
             NotFound => LinuxError::ENOENT,
-            PermissionDenied => LinuxError::EACCES,
+            PermissionDenied => LinuxError::EBADF,
             ResourceBusy => LinuxError::EBUSY,
             StorageFull => LinuxError::ENOSPC,
             Unsupported => LinuxError::ENOSYS,
             UnexpectedEof | WriteZero => LinuxError::EIO,
             WouldBlock => LinuxError::EAGAIN,
+            BrokenPipe => LinuxError::EPIPE,
+            NoDevOrAddr => LinuxError::ENXIO,
+            NoPermission => LinuxError::EPERM,
+            PermDenied => LinuxError::EACCES,
+            TooManyLinks => LinuxError::ELOOP,
         }
     }
 }
